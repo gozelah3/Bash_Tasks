@@ -1,0 +1,286 @@
+3. Automating a Backup file in Bash scripting
+
+Automating Backups saves time and creates efficency in task completion. 
+- Let’s create a script to automate backups of specific directories like the etc, home and boot using bash scripts:
+- Create a script "areyouok.sh" and vi into it.
+ 
+#!/bin/bash
+backup_dirs=("/etc" "/home" "/boot")
+dest_dir="/backup"
+dest_server="server1"
+backup_date=$(date +%b-%d-%y)
+
+echo "Starting backup of: ${backup_dirs[@]}"
+
+for i in "${backup_dirs[@]}"; do
+    sudo tar -Pczf /tmp/$i-$backup_date.tar.gz $i
+    if [ $? -eq 0 ]; then
+        echo "$i backup succeeded."
+    else
+        echo "$i backup failed."
+    fi
+    scp /tmp/$i-$backup_date.tar.gz $dest_server:$dest_dir
+done
+
+- Save and run the script with $ ./scriptname to get your output.
+- In this script: backup_dirs specifies directories to back up. It creates a compressed tarball for each directory and those tarballs are copied to a destination server via SCP.
+- Customize the directories, destination, and server according to your needs2.-
+- To make your scripts executable use the command $ chmod +x script_name.sh.
+
+
+Task 2: Use conditional statements (if, else, elif) to create logic in Bash scripts. 
+
+The conditional statements If, else and elif are used to make decisions in our system 
+
+- Create a script named "areyouok.sh". 
+- use the command $ vi areyouok.sh to create your bash script
+- You can create a Bash script like this (replacing scriptname with "areyouok.sh"):
+
+#!/bin/bash
+scriptname=$(cat areyouok.sh)
+echo -n "Enter the username: "
+read name
+echo -n "Enter the user id: "
+read uid
+
+for i in $scriptname; do
+    echo $i
+    ssh $i "sudo useradd -m -u $uid $name"
+    if [ $? -eq 0 ]; then
+        echo "User $name added on $i"
+    else
+        echo "Error on $i"
+
+    fi
+done
+
+- Save and run the script with $ ./scriptname to get your output.
+- check for results of statement in script passed. it will perform the first condition if it is true. It will provide the input for adding your userid if username is true 
+- if is not true (else mechanism print) it will show that since we did not meet the condition in the first condition it will run an error value. 
+- In this script areyouok.sh does contain a hostname or IP address. The script prompts you for the username and user ID. It then connects to each server via SSH and adds the requested user.
+
+
+
+Task 3: Define and call functions to modularize Bash scripts.
+
+Modularity function is used to simplifying Complex Tasks. As scripts grow in complexity, functions become indispensable. Break down complex tasks into modular functions to enhance readability.
+Here’s a complete example combining three concepts: 
+- Create basic function of greeting.
+- Create a function with arguments.
+- Create a function returning values.
+
+
+#!/bin/bash
+
+# Example 1: Creating a basic function
+greet() {
+    echo "Hello, welcome to the script!"
+}
+greet
+
+# Example 2: Creating a function with arguments
+greet_user() {
+    echo "Hello, $1! Welcome to the script!"
+}
+greet_user "Alice"
+
+# Example 3: Creating a function that returns a value
+add() {
+    result=$(( $1 + $2 ))
+    echo $result
+}
+sum=$(add 5 7)
+echo "The sum is: $sum"
+
+
+- Save this script to a .sh file, make it executable (chmod +x filename.sh), and run it. 
+- The concepts in will bw shown in the output.
+- [ec2-user@ip-172-31- ~]$ vi areyouok.sh
+- [ec2-user@ip-172-31- ~]$ ./areyouok.sh
+- Hello, welcome to the script!
+  Hello, Alice! Welcome to the script!
+  The sum is: 12.
+
+
+- Note, functions are your scripting allies—they enhance code organization, readability, and maintainability
+
+
+4.
+Handling command-line arguments is crucial, When writing Bash scripts. Let’s explore two common approaches: using positional parameters like $1, $2, etc., and utilizing the getopts built-in function.
+
+Positional Parameters (Using $1, $2, etc.):
+Positional parameters represent command-line arguments passed to a script.
+For example, if your script is called with ./myscript -vfd ./foo/bar/someFile -o /fizz/someOtherFile, you can access these arguments as follows:
+
+#!/bin/bash
+v=false
+f=false
+d=false
+outFile=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -v) v=true ;;
+        -f) f=true ;;
+        -d) d=true ;;
+        -o) shift; outFile="$1" ;;
+        *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+    shift
+done
+
+echo "v=$v, f=$f, d=$d, outFile=$outFile"
+
+In this example, $v, $f, and $d will be set to true, and $outFile will be equal to /fizz/someOtherFile.
+
+[ec2-user@ip-172-31-16-251 ~]$ vi areyouok.sh
+[ec2-user@ip-172-31-16-251 ~]$ ./areyouok.sh
+v=false, f=false, d=false, outFile=
+[ec2-user@ip-172-31-16-251 ~]$ 
+
+Using getopts:
+The getopts function simplifies parsing command-line options.
+Here’s an example:
+#!/bin/bash
+args=$(getopt -l "searchpath:" -o "s:h" -- "$@")
+eval set -- "$args"
+
+while [ $# -ge 1 ]; do
+    case "$1" in
+        --) break ;; # No more options left
+        -s|--searchpath) shift; searchPath="$1" ;;
+        -h) echo "Help option detected" ;;
+        *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+    shift
+done
+
+echo "Search path: $searchPath"
+
+In this example, if you run ./myscript.sh -s /etc, it will set searchPath to /etc as seen below.
+
+[ec2-user@ip-172-31 ~]$ vi myscript.sh
+[ec2-user@ip-172-31 ~]$ ./myscript.sh
+Search path: 
+[ec2-user@ip-172-31 ~]$ ./myscript.sh
+
+
+
+5. Implement error handling and logging in Bash scripts using trap, exit, and echo.
+
+Using trap for Error Handling and Logging: 
+- The trap command allows you to set up signal handlers that catch and handle errors or other events. 
+- You can define functions to handle errors and log messages. For instance:
+
+#!/bin/bash
+# Function to handle errors
+handle_error() {
+    local line=$1
+    echo "Error: Unable to delete file '$filename' at line $line"
+    # Additional error handling logic here
+    exit 1
+}
+
+# Set up trap for EXIT signal
+trap 'handle_error $LINENO' EXIT
+
+# Your script logic here
+# ...
+- Replace the placeholder filename with the actual file name (areyouok.sh) you’re working with. 
+- When an error occurs during script execution, the handle_error function will be triggered, allowing you to log the error and take appropriate action2.
+
+[ec2-user@ip-172-31 ~]$ vi areyouok.sh
+[ec2-user@ip-172-31 ~]$ ./areyouok.sh
+Error: Unable to delete file '.sh' at line 1
+[ec2-user@ip-172-31 ~]$ cat areyouok.sh
+#!/bin/bash
+# Function to handle errors
+handle_error() {
+    local line=$1
+    echo "Error: Unable to delete file '$areyouok.sh' at line $line"
+    # Additional error handling logic here
+    exit 1
+}
+
+# Set up trap for EXIT signal
+trap 'handle_error $LINENO' EXIT
+
+# Your script logic here
+# ...
+
+
+
+Using Exit for Error Handling and Logging:
+- You can check and detect the Exit status of commands in your Bash script, using the if and exit status.
+- It is conditional in nature and is determined by exit code. 
+- If a command fails (returns a non-zero exit status), if it succeeds (returns a zero exit status). 
+- Create a script with vi and used it to exit the wrong :
+
+#!/bin/bash
+if ! bad_command; then
+    echo "bad_command flagged an error."
+    exit 1
+fi
+
+- In this script, replace bad_command with the actual command you want to run. 
+- If the command fails, it prints an error message and exits with a exit status code of 1 indicating error as seen here:
+
+[ec2-user@ip-172-31 ~]$ vi areyouok.sh
+[ec2-user@ip-172-31 ~]$ ./areyouok.sh
+./areyouok.sh: line 2: bad_command: command not found
+bad_command flagged an error.
+[ec2-user@ip-172-31 ~]$ cat areyouok.sh
+#!/bin/bash
+if ! bad_command; then
+    echo "bad_command flagged an error."
+    exit 1
+fi
+
+
+Logging with echo: Use echo statements to log messages to a file or the console. For example:
+
+I created a simple script that simulates a file download process and handles potential errors:
+
+#!/bin/bash
+log_file="download_log.txt"
+
+# Function to handle errors
+handle_error() {
+    local error_message="$1"
+    echo "Error: $error_message" >&2
+    # Additional error handling logic here (e.g., cleanup, notifications)
+    exit 1
+}
+
+# Simulate downloading a file (replace with actual download logic)
+download_file() {
+    local url="$1"
+    local destination="$2"
+    echo "Downloading from $url to $destination..."
+    # Simulate an error (e.g., file not found)
+    if [[ "$url" == "https://example.com/nonexistent-file.txt" ]]; then
+        handle_error "File not found: $url"
+    fi
+    # Actual download logic (not shown here)
+    # ...
+    echo "Download completed successfully."
+}
+
+# Example usage
+download_file "https://example.com/some-file.txt" "output.txt"
+download_file "https://example.com/nonexistent-file.txt" "error_output.txt"
+
+In this script:
+
+- We define a handle_error function that prints an error message to stderr (>&2) and exits the script with a status code of 1.
+- The download_file function simulates downloading a file. If the URL points to a nonexistent file, it triggers the error handling function.
+- Replace the simulated download logic with your actual file download code.
+- When you run this script, it will create two files: output.txt (for successful downloads) and error_output.txt (for the nonexistent file scenario) as shown underneath
+
+[ec2-user@ip-172-31 ~]$ vi areyouok.sh
+[ec2-user@ip-172-31 ~]$ ./areyouok.sh
+Downloading from https://example.com/some-file.txt to output.txt...
+Download completed successfully.
+Downloading from https://example.com/nonexistent-file.txt to error_output.txt...
+Error: File not found: https://example.com/nonexistent-file.txt 
+
